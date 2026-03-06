@@ -1,0 +1,5 @@
+SRA/
+SRR/
+fmt_fastp_trimmed/
+slurm-*.out
+slurm-*.err
