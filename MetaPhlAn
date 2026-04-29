@@ -1,0 +1,35 @@
+#!/bin/bash
+#SBATCH --job-name=metaphlan_FMT
+#SBATCH --nodelist=omics-cn003
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=40G
+#SBATCH --time=72:00:00
+#SBATCH --output=logs/mp_%A_%a.out
+#SBATCH --array=0-95
+
+
+source /zfs/omics/projects/metatools/TOOLS/miniconda3/etc/profile.d/conda.sh
+conda activate /zfs/omics/projects/metatools/TOOLS/miniconda3/envs/metaphlan-4.0
+
+# Paden
+INPUT_DIR="/scratch/14993988/fmt_fastp/fmt_fastp_trimmed"
+OUTPUT_DIR="/scratch/14993988/metaphlan_results"
+PROFILED_DIR="${OUTPUT_DIR}/profiled"
+BOWTIE_DIR="${OUTPUT_DIR}/bowtie2"
+
+mkdir -p $PROFILED_DIR $BOWTIE_DIR logs
+
+# Sample lijst maken
+SAMPLES=($(ls ${INPUT_DIR}/*_R1.trimmed.fastq.gz | xargs -n 1 basename | sed 's/_R1.trimmed.fastq.gz//'))
+SAMPLE=${SAMPLES[$SLURM_ARRAY_TASK_ID]}
+
+echo "Bezig met: ${SAMPLE} op node ${SLURM_NODENAME}"
+
+# MetaPhlAn runnen
+metaphlan ${INPUT_DIR}/${SAMPLE}_R1.trimmed.fastq.gz,${INPUT_DIR}/${SAMPLE}_R2.trimmed.fastq.gz \
+    --mapout ${BOWTIE_DIR}/${SAMPLE}.bowtie2.bz2 \
+    --nproc 8 \
+    --input_type fastq \
+    -o ${PROFILED_DIR}/${SAMPLE}_profiled.txt \
+    --index mpa_vJan25_CHOCOPhlAnSGB_202503 \
+    --db_dir /zfs/omics/projects/metatools/DB/metaphlan
